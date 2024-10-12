@@ -1,10 +1,6 @@
 package ru.ivonin.MySecondTestAppSpringBoot.model;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Request {
-
     @NotBlank(message = "UID не должен быть пустым")
     @Size(max = 32, message = "UID должен содержать не более 32 символов")
     private String uid;
@@ -24,6 +19,7 @@ public class Request {
     @Size(max = 32, message = "Operation UID должен содержать не более 32 символов")
     private String operationUid;
 
+    @NotBlank(message = "System Name не должен быть пустым")
     private String systemName;
 
     @NotBlank(message = "System Time не должен быть пустым")
@@ -36,8 +32,21 @@ public class Request {
     private int communicationID;
 
     private int templateID;
-
     private int productCode;
-
     private int smsCode;
+
+    @Override
+    public String toString() {
+        return "{" +
+                "uid='" + uid + '\'' +
+                ", operationUid='" + operationUid + '\'' +
+                ", systemName=" + systemName + '\'' +
+                ", systemTime='" + systemTime +
+                ", source='" + source + '\'' +
+                ", communicationId=" + communicationID +
+                ", templateId=" + templateID +
+                ", productCode=" + productCode +
+                ", smsCode=" + smsCode +
+                '}';
+    }
 }
