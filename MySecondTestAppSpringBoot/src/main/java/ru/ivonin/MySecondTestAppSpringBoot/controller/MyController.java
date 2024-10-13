@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.ivonin.MySecondTestAppSpringBoot.exception.UnsupportedCodeException;
 import ru.ivonin.MySecondTestAppSpringBoot.exception.ValidationFailedException;
 import ru.ivonin.MySecondTestAppSpringBoot.model.*;
+import ru.ivonin.MySecondTestAppSpringBoot.service.AnnualBonusServiceImpl;
 import ru.ivonin.MySecondTestAppSpringBoot.service.ModifyRequestService;
 import ru.ivonin.MySecondTestAppSpringBoot.service.ModifyResponseService;
 import ru.ivonin.MySecondTestAppSpringBoot.service.ValidationService;
@@ -23,6 +24,7 @@ import java.util.Date;
 @Slf4j
 @RestController
 public class MyController {
+
     private final ValidationService validationService;
     private final ModifyResponseService modifyResponseService;
     private final ModifyRequestService modifyRequestService;
@@ -36,12 +38,11 @@ public class MyController {
         this.modifyRequestService = modifyRequestService;
     }
 
+
     @PostMapping(value = "/feedback")
     public ResponseEntity<Response> feedback(@Valid @RequestBody Request request, BindingResult bindingResult) {
-        long receivedTime = System.currentTimeMillis(); // Получаем текущее время
+        long receivedTime = System.currentTimeMillis();
         log.info("Received request at: {}", receivedTime);
-
-        // Создаём response и добавляем receivedTime
         Response response = Response.builder()
                 .uid(request.getUid())
                 .operationUid(request.getOperationUid())
@@ -51,8 +52,8 @@ public class MyController {
                 .errorCode(ErrorCodes.EMPTY)
                 .errorMessage(ErrorMessages.EMPTY)
                 .receivedTime(receivedTime)
+                .annualBonus(0.0)
                 .build();
-
         log.info("Initial response created: {}", response);
 
         try {
@@ -61,18 +62,30 @@ public class MyController {
             if ("123".equals(request.getUid())) {
                 throw new UnsupportedCodeException("Код 'uid' не поддерживается");
             }
+
+            Positions positions = Positions.valueOf(request.getPosition());
+            double salary = request.getSalary();
+            double bonus = request.getBonus();
+            int workDays = request.getWorkDays();
+            int year = new Date().getYear() + 1900;
+
+            double annualBonus = new AnnualBonusServiceImpl().calculate(positions, salary, bonus, workDays, year);
+            response.setAnnualBonus(annualBonus);
+
         } catch (UnsupportedCodeException e) {
             response.setCode(Codes.FAILED);
             response.setErrorCode(ErrorCodes.UNSUPPORTED_EXCEPTION);
             response.setErrorMessage(ErrorMessages.UNSUPPORTED);
             log.info("Response modified due to UnsupportedCodeException: {}", response);
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+
         } catch (ValidationFailedException e) {
             response.setCode(Codes.FAILED);
             response.setErrorCode(ErrorCodes.VALIDATION_EXCEPTION);
             response.setErrorMessage(ErrorMessages.VALIDATION);
             log.info("Response modified due to ValidationFailedException: {}", response);
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+
         } catch (Exception e) {
             response.setCode(Codes.FAILED);
             response.setErrorCode(ErrorCodes.UNKNOWN_EXCEPTION);
@@ -81,10 +94,30 @@ public class MyController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-
         modifyRequestService.modify(request);
         Response modifiedResponse = modifyResponseService.modify(response);
         log.info("Response modified by ModifyResponseService: {}", modifiedResponse);
         return new ResponseEntity<>(modifiedResponse, HttpStatus.OK);
+    }
+
+
+    @PostMapping(value = "/calculateQuarterlyBonus")
+    public ResponseEntity<Double> calculateQuarterlyBonus(@Valid @RequestBody Request request, BindingResult bindingResult) {
+        try {
+            validationService.isValid(bindingResult);
+
+            Positions position = Positions.valueOf(request.getPosition());
+            double salary = request.getSalary();
+            double quarterlyBonus = 0.25;
+
+            double result = new AnnualBonusServiceImpl().calculateQuarterlyBonus(position, salary, quarterlyBonus);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
