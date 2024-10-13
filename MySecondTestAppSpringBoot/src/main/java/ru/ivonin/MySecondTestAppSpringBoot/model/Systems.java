@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum Systems {
     ERP("Enterprise Resource Planning"),
     CRM("Customer Relationship Management"),
-    WMS("Warehouse Management System");
+    WMS("Warehouse Management System"),
+    SERVICE1("Service 1");
 
     private final String description;
 
@@ -18,18 +19,18 @@ public enum Systems {
         return description;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return description;
     }
 
-    // Метод для получения Systems на основе описания
     public static Systems fromDescription(String description) {
         for (Systems system : Systems.values()) {
-            if (system.getDescription().equalsIgnoreCase(description)) { // Используем ignoreCase для чувствительности к регистру
+            if (system.getDescription().equalsIgnoreCase(description)) {
                 return system;
             }
         }
+
+        System.err.println("Unknown description received: " + description);
         throw new IllegalArgumentException("Unknown description: " + description);
     }
 }

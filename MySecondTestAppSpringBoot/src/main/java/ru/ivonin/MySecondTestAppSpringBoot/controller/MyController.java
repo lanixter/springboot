@@ -21,10 +21,8 @@ import java.util.Date;
 
 @Slf4j
 @RestController
-
 public class MyController {
     private final ValidationService validationService;
-
     private final ModifyResponseService modifyResponseService;
 
     @Autowired
@@ -37,7 +35,9 @@ public class MyController {
     @PostMapping(value = "/feedback")
     public ResponseEntity<Response> feedback(@Valid @RequestBody Request request,
                                              BindingResult bindingResult) {
-        log.info("Received request: {}", request);
+        // Запись времени получения запроса
+        long startTime = System.currentTimeMillis();
+        log.info("Received request at: {}", new Date(startTime));
 
         Response response = Response.builder()
                 .uid(request.getUid())
@@ -50,10 +50,8 @@ public class MyController {
                 .build();
 
         log.info("Initial response created: {}", response);
-
         try {
             validationService.isValid(bindingResult);
-
             if ("123".equals(request.getUid())) {
                 throw new UnsupportedCodeException("Код 'uid' не поддерживается");
             }
@@ -77,9 +75,14 @@ public class MyController {
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-
         Response modifiedResponse = modifyResponseService.modify(response);
         log.info("Response modified by ModifyResponseService: {}", modifiedResponse);
+
+        // Измеряем время, прошедшее с момента получения запроса
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        log.info("Time taken to process request: {} ms", duration);
+
         return new ResponseEntity<>(modifiedResponse, HttpStatus.OK);
     }
 }
