@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.ivonin.MySecondTestAppSpringBoot.exception.UnsupportedCodeException;
 import ru.ivonin.MySecondTestAppSpringBoot.exception.ValidationFailedException;
 import ru.ivonin.MySecondTestAppSpringBoot.model.*;
+import ru.ivonin.MySecondTestAppSpringBoot.service.ModifyRequestService;
 import ru.ivonin.MySecondTestAppSpringBoot.service.ModifyResponseService;
 import ru.ivonin.MySecondTestAppSpringBoot.service.ValidationService;
 import ru.ivonin.MySecondTestAppSpringBoot.util.DateTimeUtil;
@@ -21,24 +22,26 @@ import java.util.Date;
 
 @Slf4j
 @RestController
-
 public class MyController {
     private final ValidationService validationService;
-
     private final ModifyResponseService modifyResponseService;
+    private final ModifyRequestService modifyRequestService;
 
     @Autowired
     public MyController(ValidationService validationService,
-                        @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService) {
+                        @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService,
+                        @Qualifier("ModifySourceRequestService") ModifyRequestService modifyRequestService) {
         this.validationService = validationService;
         this.modifyResponseService = modifyResponseService;
+        this.modifyRequestService = modifyRequestService;
     }
 
     @PostMapping(value = "/feedback")
-    public ResponseEntity<Response> feedback(@Valid @RequestBody Request request,
-                                             BindingResult bindingResult) {
-        log.info("Received request: {}", request);
+    public ResponseEntity<Response> feedback(@Valid @RequestBody Request request, BindingResult bindingResult) {
+        long receivedTime = System.currentTimeMillis(); // Получаем текущее время
+        log.info("Received request at: {}", receivedTime);
 
+        // Создаём response и добавляем receivedTime
         Response response = Response.builder()
                 .uid(request.getUid())
                 .operationUid(request.getOperationUid())
@@ -47,6 +50,7 @@ public class MyController {
                 .code(Codes.SUCCESS)
                 .errorCode(ErrorCodes.EMPTY)
                 .errorMessage(ErrorMessages.EMPTY)
+                .receivedTime(receivedTime)
                 .build();
 
         log.info("Initial response created: {}", response);
@@ -78,6 +82,7 @@ public class MyController {
         }
 
 
+        modifyRequestService.modify(request);
         Response modifiedResponse = modifyResponseService.modify(response);
         log.info("Response modified by ModifyResponseService: {}", modifiedResponse);
         return new ResponseEntity<>(modifiedResponse, HttpStatus.OK);

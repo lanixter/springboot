@@ -7,7 +7,6 @@ import lombok.Data;
 @Data
 @Builder
 public class Response {
-
     private String uid;
     private String operationUid;
     private Systems systemName;
@@ -16,5 +15,5 @@ public class Response {
     private ErrorCodes errorCode;
     private ErrorMessages errorMessage;
     private String errorsMessage;
+    private long receivedTime;
 }
-
